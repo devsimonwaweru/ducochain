@@ -8,6 +8,7 @@ import BlockchainLedger from './pages/BlockchainLedger';
 import Reports from './pages/Reports';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
+import InstallPrompt from './components/InstallPrompt'; // Import the component
 
 function App() {
   return (
@@ -33,6 +34,9 @@ function App() {
           </div>
         } />
       </Routes>
+      
+      {/* Add the Download Popup here */}
+      <InstallPrompt />
     </Router>
   );
 }
