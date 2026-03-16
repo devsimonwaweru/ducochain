@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
-import { Settings as SettingsIcon, Server, Bell, Shield, Save, RefreshCcw, CheckCircle, CircleDot, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Settings as SettingsIcon, Server, Bell, Shield, Save, RefreshCcw, CircleDot, ToggleLeft, ToggleRight } from 'lucide-react';
 
 const Settings: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

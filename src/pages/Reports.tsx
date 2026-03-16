@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
-import { FileText, CheckCircle, Clock, AlertTriangle, Download, Filter, TrendingUp, PieChart as PieIcon, BarChart2, Users } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertTriangle, Download, TrendingUp, PieChart as PieIcon, BarChart2 } from 'lucide-react';
+
 
 const Reports: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
-import { Blocks, CircleDot, Clock, AlertTriangle, CheckCircle, Eye, ShieldCheck, FileText, Hash, Calendar, User, ArrowRight, X } from 'lucide-react';
+import { Blocks, CircleDot, Clock, Eye, ShieldCheck, FileText, Hash, ArrowRight, X } from 'lucide-react';
 
 const mockTransactions = [
   { block: 4231, docId: 'INV-1023', type: 'Invoice', hash: '0x8F4A9D23C...', timestamp: '13 Mar 2026', status: 'Verified', owner: 'Supplier' },

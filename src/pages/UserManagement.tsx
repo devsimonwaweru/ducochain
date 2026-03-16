@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
-import { Users, UserCircle, Shield, Truck, Briefcase, Search, Plus, Edit, Eye, Ban, X, CheckCircle } from 'lucide-react';
+import { Users, UserCircle, Shield, Briefcase, Plus, Edit, Ban, X, CheckCircle } from 'lucide-react';
+
+
 
 const mockUsers = [
   { id: 1, name: 'John Mwangi', company: 'ABC Manufacturing', role: 'Supplier', email: 'john@abc.com', status: 'Active' },

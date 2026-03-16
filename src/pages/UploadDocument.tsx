@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
-import { 
-  UploadCloud, FileText, Info, Calendar, User, Truck, MapPin, 
-  ShieldCheck, Hash, Clock, Save, Send, X, FilePlus, CheckCircle 
-} from 'lucide-react';
+import { UploadCloud, FileText, Info, Truck, ShieldCheck, Save, Send, X, FilePlus, CheckCircle } from 'lucide-react';
+
+
 
 const UploadDocument: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
