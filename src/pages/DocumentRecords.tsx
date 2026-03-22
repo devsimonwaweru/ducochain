@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
-import { FileText, CheckCircle, Clock, XCircle, Search, Eye, Download, Upload, AlertCircle } from 'lucide-react';
+import { FileText, CheckCircle, Clock, Search, Eye, Download, Upload, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
