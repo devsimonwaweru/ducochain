@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import UploadDocument from './pages/UploadDocument';
@@ -8,36 +10,68 @@ import BlockchainLedger from './pages/BlockchainLedger';
 import Reports from './pages/Reports';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
-import InstallPrompt from './components/InstallPrompt'; // Import the component
+import InstallPrompt from './components/InstallPrompt';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/upload" element={<UploadDocument />} />
-        <Route path="/records" element={<DocumentRecords />} />
-        <Route path="/verify" element={<VerifyDocument />} />
-        <Route path="/ledger" element={<BlockchainLedger />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/users" element={<UserManagement />} />
-        <Route path="/settings" element={<Settings />} />
-        
-        <Route path="*" element={
-          <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-800">404 - Page Not Found</h1>
-              <a href="/login" className="text-secondary hover:underline mt-4 block">Go to Login</a>
-            </div>
-          </div>
-        } />
-      </Routes>
-      
-      {/* Add the Download Popup here */}
-      <InstallPrompt />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public Route */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Protected Routes */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          
+          <Route path="/upload" element={
+            <ProtectedRoute allowedRoles={['Admin', 'Supplier']}>
+              <UploadDocument />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/records" element={
+            <ProtectedRoute allowedRoles={['Admin', 'Supplier', 'Retailer', 'Transporter']}>
+              <DocumentRecords />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/verify" element={
+            <ProtectedRoute allowedRoles={['Admin', 'Retailer']}>
+              <VerifyDocument />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/ledger" element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <BlockchainLedger />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/reports" element={
+            <ProtectedRoute allowedRoles={['Admin', 'Retailer']}>
+              <Reports />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/users" element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <UserManagement />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/settings" element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <Settings />
+            </ProtectedRoute>
+          } />
+
+          {/* Redirects */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+        <InstallPrompt />
+      </Router>
+    </AuthProvider>
   );
 }
 

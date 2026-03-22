@@ -1,26 +1,34 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, Upload, FileText, ShieldCheck, Blocks, PieChart, Users, Settings, X 
-} from 'lucide-react';
+import { LayoutDashboard, Upload, FileText, ShieldCheck, Blocks, PieChart, Users, Settings, X } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Upload Document', href: '/upload', icon: Upload },
-  { name: 'Document Records', href: '/records', icon: FileText },
-  { name: 'Verify Document', href: '/verify', icon: ShieldCheck },
-  { name: 'Blockchain Ledger', href: '/ledger', icon: Blocks },
-  { name: 'Reports', href: '/reports', icon: PieChart },
-  { name: 'User Management', href: '/users', icon: Users },
-  { name: 'Settings', href: '/settings', icon: Settings },
+// Define permissions for each nav item
+const navConfig = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['Admin', 'Supplier', 'Retailer', 'Transporter'] },
+  { name: 'Upload Document', href: '/upload', icon: Upload, roles: ['Admin', 'Supplier'] },
+  { name: 'Document Records', href: '/records', icon: FileText, roles: ['Admin', 'Supplier', 'Retailer', 'Transporter'] },
+  { name: 'Verify Document', href: '/verify', icon: ShieldCheck, roles: ['Admin', 'Retailer'] },
+  { name: 'Blockchain Ledger', href: '/ledger', icon: Blocks, roles: ['Admin'] }, // Admin only
+  { name: 'Reports', href: '/reports', icon: PieChart, roles: ['Admin', 'Retailer'] },
+  { name: 'User Management', href: '/users', icon: Users, roles: ['Admin'] },
+  { name: 'Settings', href: '/settings', icon: Settings, roles: ['Admin'] },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const { user } = useAuth();
+
+  // Filter nav items based on user role
+  const visibleNavItems = navConfig.filter(item => {
+    if (!user) return false;
+    return item.roles.includes(user.role);
+  });
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -46,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         <nav className="p-4 space-y-1 h-[calc(100vh-8rem)] overflow-y-auto pt-8 lg:pt-4">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.name}
               to={item.href}

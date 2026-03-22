@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, LogIn, Shield, Users, Truck, UserCircle, Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const roleIcons = {
   Supplier: Briefcase,
@@ -12,29 +13,53 @@ const roleIcons = {
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth(); // Get login function from context
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<keyof typeof roleIcons>('Supplier');
+  const [role, setRole] = useState<keyof typeof roleIcons>('Supplier'); // Visual only
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
+    
+    // Attempt login via Context
+    const success = login(email, password);
+    
     setTimeout(() => {
       setIsLoading(false);
-      navigate('/dashboard');
+      if (success) {
+        navigate('/dashboard');
+      } else {
+        setError('Invalid credentials. Please use a Demo Account below.');
+      }
     }, 1000);
   };
 
+  // Fill credentials based on the hardcoded users in AuthContext
   const fillDemoCredentials = (selectedRole: string) => {
     setRole(selectedRole as keyof typeof roleIcons);
-    setEmail(`${selectedRole.toLowerCase()}@test.com`);
-    setPassword('password123');
+    
+    const credentials: { [key: string]: { email: string; pass: string } } = {
+      'Admin': { email: 'admin@docuchain.com', pass: 'admin123' },
+      'Supplier': { email: 'supplier@test.com', pass: 'supplier123' },
+      'Retailer': { email: 'retailer@test.com', pass: 'retailer123' },
+      'Transporter': { email: 'transporter@test.com', pass: 'transporter123' },
+    };
+    
+    if (credentials[selectedRole]) {
+      setEmail(credentials[selectedRole].email);
+      setPassword(credentials[selectedRole].pass);
+    }
   };
 
   return (
     <div className="min-h-screen bg-app-bg flex flex-col justify-center items-center p-4 relative overflow-hidden">
+      {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -48,6 +73,7 @@ const LoginPage: React.FC = () => {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary rounded-full filter blur-3xl opacity-20"></div>
       </div>
 
+      {/* Branding */}
       <div className="relative z-10 text-center mb-8">
         <div className="flex flex-col items-center justify-center gap-3 mb-2">
           <img src="/logo.png" alt="DocuChain Logo" className="h-12 w-auto object-contain" />
@@ -58,6 +84,7 @@ const LoginPage: React.FC = () => {
         </p>
       </div>
 
+      {/* Login Card */}
       <div className="relative z-10 w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           
@@ -66,7 +93,15 @@ const LoginPage: React.FC = () => {
             <p className="text-gray-500 text-sm mt-1">Access the blockchain platform</p>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 bg-flagged/10 text-flagged text-sm text-center p-3 rounded-lg border border-flagged/20">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleLogin} className="space-y-5">
+            {/* Email Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
               <div className="relative">
@@ -84,6 +119,7 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Password Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <div className="relative">
@@ -108,8 +144,9 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Role Selector (Visual Only) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select Role</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Acting Role</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                    {role && React.createElement(roleIcons[role], { className: "w-5 h-5 text-gray-400" })}
@@ -122,7 +159,6 @@ const LoginPage: React.FC = () => {
                   <option value="Supplier">Supplier</option>
                   <option value="Retailer">Retailer</option>
                   <option value="Transporter">Transporter</option>
-                  <option value="Auditor">Auditor</option>
                   <option value="Admin">Admin</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -133,6 +169,7 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
@@ -152,13 +189,14 @@ const LoginPage: React.FC = () => {
             </div>
           </form>
 
+          {/* Demo Accounts */}
           <div className="my-6 border-t border-gray-100 relative">
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="bg-white px-4 text-xs text-gray-400 uppercase tracking-wider">Demo Accounts</span>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {['Supplier', 'Retailer', 'Admin'].map((demoRole) => (
+          <div className="grid grid-cols-2 gap-2">
+            {['Admin', 'Supplier', 'Retailer', 'Transporter'].map((demoRole) => (
               <button
                 key={demoRole}
                 type="button"

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Bell, ChevronDown, LogOut, Settings, User, Menu } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface HeaderProps {
   user: { name: string; role: string; initials: string };
@@ -8,6 +9,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ user, onMenuClick }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { logout } = useAuth(); // Get logout function from context
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50">
@@ -73,9 +75,13 @@ const Header: React.FC<HeaderProps> = ({ user, onMenuClick }) => {
                   <Settings className="w-4 h-4" /> Settings
                 </a>
                 <div className="border-t border-gray-100 my-2"></div>
-                <a href="/login" className="flex items-center gap-3 px-4 py-2 text-sm text-flagged hover:bg-red-50">
+                {/* Updated Logout to use context function */}
+                <button 
+                  onClick={() => logout()} 
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-flagged hover:bg-red-50"
+                >
                   <LogOut className="w-4 h-4" /> Logout
-                </a>
+                </button>
               </div>
             )}
           </div>
