@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
-import { ShieldCheck, AlertTriangle, Info, UploadCloud, Search, Hash, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { AlertTriangle, Info, UploadCloud, Search, Hash, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { generateFileHash } from '../utils/hash';
 import { useAuth } from '../context/AuthContext';

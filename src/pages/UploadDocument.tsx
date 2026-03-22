@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
 import { 
-  UploadCloud, FileText, Info, Truck, ShieldCheck, Save, Send, X, FilePlus, CheckCircle 
+  UploadCloud, FileText, Info, Send, X, FilePlus 
 } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient'; // Import Supabase
-import { generateFileHash } from '../utils/hash'; // Import Hash util
+import { supabase } from '../lib/supabaseClient';
+import { generateFileHash } from '../utils/hash';
 
 const UploadDocument: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -19,7 +18,7 @@ const UploadDocument: React.FC = () => {
     supplier: '', receiver: '', transporter: '', origin: '', destination: '',
   });
   
-  const user = { name: 'Demo User', role: 'Supplier', initials: 'DU' }; // Mock user
+  const user = { name: 'Demo User', role: 'Supplier', initials: 'DU' };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -32,7 +31,6 @@ const UploadDocument: React.FC = () => {
     if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
   };
 
-  // MAIN LOGIC: Upload to Supabase
   const handleSubmit = async (action: 'draft' | 'blockchain') => {
     if (!file || !formData.docId) {
       alert("Please provide a Document ID and a File.");
@@ -47,7 +45,8 @@ const UploadDocument: React.FC = () => {
 
       // 2. Upload File to Storage
       const fileName = `${Date.now()}_${file.name}`;
-      const { data: storageData, error: storageError } = await supabase.storage
+      // Removed unused 'storageData' variable
+      const { error: storageError } = await supabase.storage
         .from('documents')
         .upload(fileName, file);
 
@@ -79,7 +78,7 @@ const UploadDocument: React.FC = () => {
         await supabase.from('blockchain_records').insert([
           {
             doc_id: formData.docId,
-            hash: docHash,
+            record_hash: docHash, // Updated to match typical schema column name
             tx_hash: `0x${Math.random().toString(16).slice(2)}`,
             block_number: Math.floor(Math.random() * 10000)
           }
