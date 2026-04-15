@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
-import { FileText, CheckCircle, Clock, AlertTriangle, Download, TrendingUp, PieChart as PieIcon, BarChart2, Loader2 } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertTriangle, Download, TrendingUp, PieChart as PieIcon, BarChart2, Loader2, Link } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+
+interface BlockchainRecord {
+  tx_hash: string;
+  block_number: number;
+}
 
 interface Document {
   id: string;
@@ -13,6 +18,7 @@ interface Document {
   receiver: string;
   status: string;
   created_at: string;
+  blockchain_records: BlockchainRecord[];
 }
 
 const Reports: React.FC = () => {
@@ -28,9 +34,22 @@ const Reports: React.FC = () => {
   const fetchReportData = async () => {
     try {
       setLoading(true);
+      
       const { data, error } = await supabase
         .from('documents')
-        .select('*')
+        .select(`
+          id,
+          doc_id,
+          type,
+          supplier,
+          receiver,
+          status,
+          created_at,
+          blockchain_records (
+            tx_hash,
+            block_number
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -47,6 +66,7 @@ const Reports: React.FC = () => {
   const verifiedCount = documents.filter(d => d.status === 'Verified').length;
   const pendingCount = documents.filter(d => d.status === 'Pending').length;
   const flaggedCount = documents.filter(d => d.status === 'Flagged').length;
+  const anchoredCount = documents.filter(d => d.blockchain_records && d.blockchain_records.length > 0).length;
 
   // Aggregation Helpers
   const getMostFrequent = (key: keyof Document) => {
@@ -72,12 +92,13 @@ const Reports: React.FC = () => {
   const mostUploaded = getMostFrequent('type');
   const topSupplier = getMostFrequent('supplier');
 
-  // Stats Data
+  // Stats Data - Updated Label
   const stats = [
     { title: 'Total Documents', value: totalDocs, icon: FileText, color: 'primary' },
     { title: 'Verified Documents', value: verifiedCount, icon: CheckCircle, color: 'verified' },
     { title: 'Pending Verification', value: pendingCount, icon: Clock, color: 'pending' },
-    { title: 'Fraud Attempts Detected', value: flaggedCount, icon: AlertTriangle, color: 'flagged' },
+    { title: 'Flagged Documents', value: flaggedCount, icon: AlertTriangle, color: 'flagged' }, // Changed Label
+    { title: 'Anchored on Chain', value: anchoredCount, icon: Link, color: 'accent' },
   ];
 
   return (
@@ -103,7 +124,7 @@ const Reports: React.FC = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             {stats.map((stat) => (
               <div key={stat.title} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                 <div className="flex justify-between items-center mb-3">
@@ -133,7 +154,6 @@ const Reports: React.FC = () => {
                       <h3 className="font-semibold text-gray-900 text-sm">Documents Over Time</h3>
                     </div>
                     <div className="h-40 w-full bg-gradient-to-t from-secondary/10 to-transparent rounded-lg flex items-end justify-around p-2">
-                      {/* Static visualization for now, could be replaced with Recharts */}
                       <div className="w-2 h-1/2 bg-secondary/30 rounded"></div>
                       <div className="w-2 h-1/3 bg-secondary/30 rounded"></div>
                       <div className="w-2 h-2/3 bg-secondary/30 rounded"></div>
@@ -172,7 +192,7 @@ const Reports: React.FC = () => {
                       </div>
                       <div className="flex flex-col items-center gap-1">
                         <div className="w-10 bg-flagged rounded-t transition-all" style={{ height: totalDocs ? `${(flaggedCount / totalDocs) * 100}%` : '0%', minHeight: '4px' }}></div>
-                        <span className="text-xs text-gray-500">Failed</span>
+                        <span className="text-xs text-gray-500">Flagged</span>
                       </div>
                     </div>
                   </div>
@@ -212,6 +232,7 @@ const Reports: React.FC = () => {
                         <th className="text-left text-xs font-semibold text-gray-500 uppercase px-5 py-3">ID</th>
                         <th className="text-left text-xs font-semibold text-gray-500 uppercase px-5 py-3">Type</th>
                         <th className="text-left text-xs font-semibold text-gray-500 uppercase px-5 py-3">Supplier</th>
+                        <th className="text-left text-xs font-semibold text-gray-500 uppercase px-5 py-3">Blockchain Tx</th>
                         <th className="text-left text-xs font-semibold text-gray-500 uppercase px-5 py-3">Status</th>
                       </tr>
                     </thead>
@@ -221,8 +242,20 @@ const Reports: React.FC = () => {
                           <td className="px-5 py-3 font-mono text-sm text-primary">{row.doc_id}</td>
                           <td className="px-5 py-3 text-sm text-gray-600">{row.type}</td>
                           <td className="px-5 py-3 text-sm text-gray-500">{row.supplier || 'N/A'}</td>
+                          <td className="px-5 py-3 text-sm text-gray-500">
+                            {row.blockchain_records && row.blockchain_records.length > 0 ? (
+                              <span className="font-mono text-xs text-secondary">
+                                {row.blockchain_records[0].tx_hash.substring(0, 12)}...
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400 italic">Unanchored</span>
+                            )}
+                          </td>
                           <td className="px-5 py-3">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${row.status === 'Verified' ? 'bg-verified/10 text-verified' : 'bg-pending/10 text-pending'}`}>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              row.status === 'Verified' ? 'bg-verified/10 text-verified' : 
+                              row.status === 'Flagged' ? 'bg-flagged/10 text-flagged' : 
+                              'bg-pending/10 text-pending'}`}>
                               {row.status}
                             </span>
                           </td>

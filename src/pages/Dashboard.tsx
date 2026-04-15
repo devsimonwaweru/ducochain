@@ -2,9 +2,25 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
-import { FileText, CheckCircle, Clock, AlertTriangle, ArrowUpRight, Blocks, Upload, ShieldCheck } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertTriangle, ArrowUpRight, Blocks, Upload, ShieldCheck, Link } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+
+// Interface for the joined blockchain data
+interface BlockchainRecord {
+  tx_hash: string;
+}
+
+// Interface for Dashboard Document
+interface DashboardDocument {
+  id: string;
+  doc_id: string;
+  type: string;
+  supplier: string;
+  status: string;
+  created_at: string;
+  blockchain_records: BlockchainRecord[];
+}
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -16,8 +32,10 @@ const Dashboard: React.FC = () => {
     { title: 'Verified Documents', value: '...', icon: CheckCircle, color: 'verified' },
     { title: 'Pending', value: '...', icon: Clock, color: 'pending' },
     { title: 'Flagged', value: '...', icon: AlertTriangle, color: 'flagged' },
+    { title: 'Anchored on Chain', value: '...', icon: Link, color: 'accent' },
   ]);
-  const [recentDocs, setRecentDocs] = useState<any[]>([]);
+  
+  const [recentDocs, setRecentDocs] = useState<DashboardDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch Data from Supabase
@@ -29,7 +47,7 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
 
-      // 1. Fetch all documents to calculate stats
+      // 1. Fetch document status counts
       const { data: allDocs, error: docsError } = await supabase
         .from('documents')
         .select('status');
@@ -42,17 +60,35 @@ const Dashboard: React.FC = () => {
       const pending = allDocs?.filter(d => d.status === 'Pending').length || 0;
       const flagged = allDocs?.filter(d => d.status === 'Flagged').length || 0;
 
+      // 2. Fetch blockchain records count
+      const { count: anchoredCount, error: anchorError } = await supabase
+        .from('blockchain_records')
+        .select('id', { count: 'exact', head: true });
+
+      if (anchorError) throw anchorError;
+
       setStats([
         { title: 'Total Documents', value: total.toString(), icon: FileText, color: 'primary' },
         { title: 'Verified Documents', value: verified.toString(), icon: CheckCircle, color: 'verified' },
         { title: 'Pending', value: pending.toString(), icon: Clock, color: 'pending' },
         { title: 'Flagged', value: flagged.toString(), icon: AlertTriangle, color: 'flagged' },
+        { title: 'Anchored on Chain', value: (anchoredCount || 0).toString(), icon: Link, color: 'accent' },
       ]);
 
-      // 2. Fetch recent 5 documents
+      // 3. Fetch recent 5 documents with blockchain records
       const { data: recent, error: recentError } = await supabase
         .from('documents')
-        .select('*')
+        .select(`
+          id,
+          doc_id,
+          type,
+          supplier,
+          status,
+          created_at,
+          blockchain_records (
+            tx_hash
+          )
+        `)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -108,8 +144,8 @@ const Dashboard: React.FC = () => {
             </a>
           </div>
 
-          {/* Stats Grid (Real Data) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* Stats Grid (Real Data) - Adjusted for 5 items */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
             {stats.map((stat, index) => (
               <div key={index} className="bg-white rounded-xl p-5 border border-gray-100 hover:shadow-sm transition-all animate-slide-up">
                 <div className={`p-2 rounded-lg w-fit bg-${stat.color}/10`}>
@@ -149,6 +185,7 @@ const Dashboard: React.FC = () => {
                       <th className="text-left text-xs font-semibold text-gray-500 uppercase px-5 py-3">Type</th>
                       <th className="text-left text-xs font-semibold text-gray-500 uppercase px-5 py-3">Supplier</th>
                       <th className="text-left text-xs font-semibold text-gray-500 uppercase px-5 py-3">Status</th>
+                      <th className="text-left text-xs font-semibold text-gray-500 uppercase px-5 py-3">Blockchain</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -161,6 +198,19 @@ const Dashboard: React.FC = () => {
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusClasses(doc.status)}`}>
                             {doc.status}
                           </span>
+                        </td>
+                        <td className="px-5 py-3">
+                          {doc.blockchain_records && doc.blockchain_records.length > 0 ? (
+                            <span className="flex items-center gap-1 text-xs text-secondary font-medium">
+                              <Link className="w-3 h-3" />
+                              Anchored
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs text-gray-400 italic">
+                              <Clock className="w-3 h-3" />
+                              Pending
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}

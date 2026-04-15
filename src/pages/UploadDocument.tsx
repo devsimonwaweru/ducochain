@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
 import { 
-  UploadCloud, FileText, Info, Send, X, FilePlus 
+  UploadCloud, FileText, Info, Send, X, FilePlus, Loader2 
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { generateFileHash } from '../utils/hash';
@@ -45,7 +45,6 @@ const UploadDocument: React.FC = () => {
 
       // 2. Upload File to Storage
       const fileName = `${Date.now()}_${file.name}`;
-      // Removed unused 'storageData' variable
       const { error: storageError } = await supabase.storage
         .from('documents')
         .upload(fileName, file);
@@ -57,7 +56,8 @@ const UploadDocument: React.FC = () => {
         .from('documents')
         .getPublicUrl(fileName);
 
-      // 4. Save Metadata to Database
+      // 4. Save Metadata to 'documents' table
+      // Note: status is set to 'Verified' immediately if sent to blockchain, otherwise 'Pending'
       const { error: dbError } = await supabase.from('documents').insert([
         {
           doc_id: formData.docId,
@@ -73,19 +73,26 @@ const UploadDocument: React.FC = () => {
 
       if (dbError) throw dbError;
 
-      // 5. If Blockchain Action, save to blockchain_records
+      // 5. If Blockchain Action, save to 'blockchain_records' table
       if (action === 'blockchain') {
-        await supabase.from('blockchain_records').insert([
+        // Generate mock transaction data
+        const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+        
+        const { error: bcError } = await supabase.from('blockchain_records').insert([
           {
-            doc_id: formData.docId,
-            record_hash: docHash, // Updated to match typical schema column name
-            tx_hash: `0x${Math.random().toString(16).slice(2)}`,
-            block_number: Math.floor(Math.random() * 10000)
+            doc_id: formData.docId,       // Foreign Key link
+            hash: docHash,                // Correct column name from schema
+            tx_hash: mockTxHash,          // Transaction hash
+            block_number: Math.floor(Math.random() * 1000000) // Mock block number
           }
         ]);
+
+        if (bcError) throw bcError;
       }
 
       alert(`Success! Document ${formData.docId} saved.`);
+      
+      // Reset form
       setFile(null);
       setFormData({ docTitle: '', docType: 'Invoice', docId: '', issueDate: '', supplier: '', receiver: '', transporter: '', origin: '', destination: '' });
 
@@ -136,12 +143,19 @@ const UploadDocument: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                     <select name="docType" className="w-full px-4 py-2.5 border rounded-lg bg-white" value={formData.docType} onChange={handleInputChange}>
-                      <option>Invoice</option><option>Delivery Note</option><option>Purchase Order</option>
+                      <option>Invoice</option>
+                      <option>Delivery Note</option>
+                      <option>Purchase Order</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
                     <input type="text" name="supplier" placeholder="ABC Manufacturing" className="w-full px-4 py-2.5 border rounded-lg" value={formData.supplier} onChange={handleInputChange} />
+                  </div>
+                  {/* Added Receiver Field to match Schema */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Receiver</label>
+                    <input type="text" name="receiver" placeholder="XYZ Retailers" className="w-full px-4 py-2.5 border rounded-lg" value={formData.receiver} onChange={handleInputChange} />
                   </div>
                 </div>
               </div>
@@ -174,11 +188,21 @@ const UploadDocument: React.FC = () => {
 
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-3 justify-end">
-                <button onClick={() => handleSubmit('draft')} disabled={isLoading} className="px-6 py-2.5 rounded-lg border border-primary text-primary font-medium hover:bg-primary/5 disabled:opacity-50">
-                  {isLoading ? 'Saving...' : 'Save Draft'}
+                <button 
+                  onClick={() => handleSubmit('draft')} 
+                  disabled={isLoading} 
+                  className="px-6 py-2.5 rounded-lg border border-primary text-primary font-medium hover:bg-primary/5 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : null}
+                  Save Draft
                 </button>
-                <button onClick={() => handleSubmit('blockchain')} disabled={isLoading} className="px-6 py-2.5 rounded-lg bg-secondary text-white font-semibold hover:bg-secondary-dark disabled:opacity-50 flex items-center gap-2">
-                  <Send className="w-4 h-4" /> Submit to Blockchain
+                <button 
+                  onClick={() => handleSubmit('blockchain')} 
+                  disabled={isLoading} 
+                  className="px-6 py-2.5 rounded-lg bg-secondary text-white font-semibold hover:bg-secondary-dark disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4" />}
+                  Submit to Blockchain
                 </button>
               </div>
 

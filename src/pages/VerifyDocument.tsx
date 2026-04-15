@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
-import { AlertTriangle, Info, UploadCloud, Search, Hash, CheckCircle, XCircle } from 'lucide-react';
+import { AlertTriangle, Info, UploadCloud, Search, Hash, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { generateFileHash } from '../utils/hash';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +21,7 @@ const VerifyDocument: React.FC = () => {
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+    setResult(null);
   };
 
   const handleVerify = async () => {
@@ -41,13 +42,29 @@ const VerifyDocument: React.FC = () => {
         .single();
 
       if (error || !data) {
-        // Not Found
+        // 3. NOT FOUND: Automatically Log as Fraud/Flagged Attempt
+        
+        // Create a temporary ID for the flagged record
+        const flaggedDocId = `FRAUD-${Date.now().toString(36).toUpperCase()}`;
+
+        // Insert into documents table as 'Flagged'
+        await supabase.from('documents').insert([
+          {
+            doc_id: flaggedDocId,
+            hash: generatedHash,
+            type: 'Unknown',
+            supplier: 'Unknown',
+            status: 'Flagged', // Automatically flagged
+            title: `Fraud Attempt: ${file.name}`
+          }
+        ]);
+
         setResult({
-          status: 'not_found',
-          title: 'Document Not Found',
-          message: 'This document does not match any record in the blockchain ledger.',
+          status: 'flagged',
+          title: 'Fraud Attempt Detected',
+          message: 'This document does not match any record in the blockchain ledger. The attempt has been logged.',
           icon: AlertTriangle,
-          color: 'pending'
+          color: 'flagged'
         });
       } else {
         // Found - Verified
@@ -77,8 +94,8 @@ const VerifyDocument: React.FC = () => {
   const getStatusStyles = (color: string) => {
     switch (color) {
       case 'verified': return { bg: 'bg-verified/10', border: 'border-verified/30', text: 'text-verified' };
-      case 'pending': return { bg: 'bg-pending/10', border: 'border-pending/30', text: 'text-pending' };
-      default: return { bg: 'bg-flagged/10', border: 'border-flagged/30', text: 'text-flagged' };
+      case 'flagged': return { bg: 'bg-flagged/10', border: 'border-flagged/30', text: 'text-flagged' };
+      default: return { bg: 'bg-pending/10', border: 'border-pending/30', text: 'text-pending' };
     }
   };
 
@@ -130,7 +147,7 @@ const VerifyDocument: React.FC = () => {
                       <p className="text-sm text-gray-400 mt-1">or <span className="text-secondary font-medium">click to browse</span></p>
                     </>
                   )}
-                  <input id="verifyFileInput" type="file" className="hidden" onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])} />
+                  <input id="verifyFileInput" type="file" className="hidden" onChange={(e) => { if(e.target.files?.[0]) setFile(e.target.files[0]); setResult(null); }} />
                 </div>
 
                 <button 
@@ -140,8 +157,7 @@ const VerifyDocument: React.FC = () => {
                 >
                   {isVerifying ? (
                     <>
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                      Verifying Hash...
+                      <Loader2 className="w-5 h-5 animate-spin" /> Verifying Hash...
                     </>
                   ) : (
                     <>
@@ -198,10 +214,10 @@ const VerifyDocument: React.FC = () => {
                   <p>1. The system reads the binary content of your file.</p>
                   <p>2. It generates a unique SHA-256 hash fingerprint.</p>
                   <p>3. It queries the Supabase database for an exact match.</p>
-                  <p>4. If found, the document is authentic and untampered.</p>
+                  <p>4. If not found, the system automatically logs it as a fraud attempt.</p>
                 </div>
                 <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500 border border-gray-100">
-                  <strong>Note:</strong> Even a single byte change in the file will result in a completely different hash, causing verification to fail.
+                  <strong>Note:</strong> Failed verification attempts are automatically flagged and stored for security auditing.
                 </div>
               </div>
             </div>
